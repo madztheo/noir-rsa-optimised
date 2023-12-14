@@ -1,3 +1,5 @@
+use dep::std::println;
+
 mod utils;
 
 // NOTE: this file is forked from https://github.com/SetProtocol/noir-rsa
@@ -10,25 +12,25 @@ mod utils;
 // - Use unconstrained division for powmod
 
 // Top-level constants related to the size of BigUint56 limbs and bytes.
-global NUM_LIMBS: Field = 74;       /// Number of limbs.
-global BITS_PER_LIMB: Field = 56;   /// Number of bits per limb.
-global BYTES_PER_LIMB: Field = 7;   /// Number of bytes per limb (BITS_PER_LIMB / 8).
-global MAX_BITS: Field = 4144;      /// Maximum number of bits (NUM_LIMBS * BITS_PER_LIMB).
-global MAX_BYTES: Field = 518;      /// Maximum number of bytes (NUM_LIMBS * BYTES_PER_LIMB).
+global NUM_LIMBS: Field = 74; /// Number of limbs.
+global BITS_PER_LIMB: Field = 56; /// Number of bits per limb.
+global BYTES_PER_LIMB: Field = 7; /// Number of bytes per limb (BITS_PER_LIMB / 8).
+global MAX_BITS: Field = 4144; /// Maximum number of bits (NUM_LIMBS * BITS_PER_LIMB).
+global MAX_BYTES: Field = 518; /// Maximum number of bytes (NUM_LIMBS * BYTES_PER_LIMB).
 
 // TODO/NOTES:
 // 1. Noir doesn't support expressions on globals so these are hardcoded
 // 2. Noir doesn't automatically add `comptime` to all globals, hence strongly typed
 // 3. Noir doesn't support const generics, so we can't have a generic limb type
 //
-// The ideal implementation would be with a generic limb type `T`, but Noir
+// The ideal implementation would be with a generic limb type `T`, but Noir 
 // doesn't support const generics so this is non-trivial to implement.
 //  struct BigUint<T, NUM_LIMBS> {
 //      limbs : [T; NUM_LIMBS],
 //  }
 
 /// A structure representing a large unsigned integer using a fixed number of limbs.
-/// Each limb is a 56-bit unsigned integer.
+/// Each limb is a 56-bit unsigned integer. 
 /// 1. 56 is divisible by 8, making byte conversion easier.
 /// 2. Multiplication requires a double width value, and u112 is the maximum representable in Noir.
 struct BigUint56 {
@@ -37,138 +39,59 @@ struct BigUint56 {
 
 impl BigUint56 {
     /// Creates a new BigUint56 initialized to zero.
-    fn zero() -> Self {
+    pub fn zero() -> Self {
         Self { limbs: [0 as u56; NUM_LIMBS] }
     }
 
     /// Creates a new BigUint56 initialized to one.
-    fn one() -> Self {
+    pub fn one() -> Self {
         let mut one = BigUint56::zero();
         one.limbs[0] = 1;
         one
     }
-
+    
     /// Constructs a BigUint56 from a single `u56` value.
-    fn from_u56(val: u56) -> Self {
+    pub fn from_u56(val: u56) -> Self {
         let mut buint = BigUint56::zero();
         buint.limbs[0] = val;
         buint
     }
 
+    /// Constructs a BigUint56 from a byte array in little-endian format.
     pub fn from_bytes<B>(bytes: [u8; B]) -> Self {
-        assert(bytes.len() as u16 <= MAX_BYTES as u16);
+        // TODO: Do I need this check?
+        assert(bytes.len() as u56 <= MAX_BYTES as u56);
 
         let mut res = BigUint56::zero();
-        for i in 0..B {
-            let limb_index = ((i as u56) / (BYTES_PER_LIMB as u56)) as u16;
+        for i in 0..bytes.len() {
+            let limb_index = (i as u56) / (BYTES_PER_LIMB as u56);
             let byte_index = (i as u56) % (BYTES_PER_LIMB as u56);
-            res.limbs[limb_index] |= (bytes[B - 1 - i] as u56) << (byte_index * 8);
+
+            res.limbs[limb_index as Field] |= (bytes[i] as u56) << (byte_index * 8);
         }
+
         res
     }
 
-    pub fn from_bytes_256<B>(bytes: [u8; B]) -> Self {
-        let mut res = BigUint56::zero();
-
-        for i in 0..36 {
-            let idx = i * 7;
-            res.limbs[i] = utils::wrapping_add_8(
-                (bytes[B - 1 - (idx)] as u56),
-                ((bytes[B - 1 - (idx + 1)] as u56) << (1 * 8)),
-                ((bytes[B - 1 - (idx + 2)] as u56) << (2 * 8)),
-                ((bytes[B - 1 - (idx + 3)] as u56) << (3 * 8)),
-                ((bytes[B - 1 - (idx + 4)] as u56) << (4 * 8)),
-                ((bytes[B - 1 - (idx + 5)] as u56) << (5 * 8)),
-                ((bytes[B - 1 - (idx + 6)] as u56) << (6 * 8)),
-                ((bytes[B - 1 - (idx + 7)] as u112) << (7 * 8)) as u56);
-        }
-        let idx = 252;
-        res.limbs[36] = (bytes[B - 1 - (idx)] as u56) +
-            ((bytes[B - 1 - (idx + 1)] as u56) << (1 * 8)) +
-            ((bytes[B - 1 - (idx + 2)] as u56) << (2 * 8)) +
-            ((bytes[B - 1 - (idx + 3)] as u56) << (3 * 8));
-        res
-    }
-
-    pub fn from_bytes_128<B>(bytes: [u8; B]) -> Self {
-        let mut res = BigUint56::zero();
-
-        for i in 0..18 {
-            let idx = i * 7;
-            res.limbs[i] = (bytes[B - 1 - (idx)] as u56) +
-                ((bytes[B - 1 - (idx + 1)] as u56) << (1 * 8)) +
-                ((bytes[B - 1 - (idx + 2)] as u56) << (2 * 8)) +
-                ((bytes[B - 1 - (idx + 3)] as u56) << (3 * 8)) +
-                ((bytes[B - 1 - (idx + 4)] as u56) << (4 * 8)) +
-                ((bytes[B - 1 - (idx + 5)] as u56) << (5 * 8)) +
-                ((bytes[B - 1 - (idx + 6)] as u56) << (6 * 8)) +
-                ((bytes[B - 1 - (idx + 7)] as u56) << (7 * 8));
-        }
-        let idx = 126;
-        res.limbs[18] = (bytes[B - 1 - (idx)] as u56) +
-            ((bytes[B - 1 - (idx + 1)] as u56) << (1 * 8));
-        res
-    }
-
-
+    /// Returns the little-endian byte array representation of the BigUint56.
     fn to_bytes(self: Self) -> [u8; MAX_BYTES] {
         let mut res = [0 as u8; MAX_BYTES];
-
+    
         for i in 0..NUM_LIMBS {
             let limb_bytes = (self.limbs[i] as Field).to_le_bytes(BYTES_PER_LIMB as u32);
             for j in 0..BYTES_PER_LIMB {
                 let idx = i * BYTES_PER_LIMB + j;
-                res[MAX_BYTES - 1 - idx] = limb_bytes[j as Field];
+                res[idx] = limb_bytes[j as Field];
             }
         }
-        res
-    }
-    fn to_bytes_first_x<X>(self: Self) -> [u8; X] {
-        let mut res = [0 as u8; X];
-
-        for i in 0..X/BYTES_PER_LIMB {
-            let limb_bytes = (self.limbs[i] as Field).to_le_bytes(BYTES_PER_LIMB as u32);
-            for j in 0..BYTES_PER_LIMB {
-                let idx = i * BYTES_PER_LIMB + j;
-                res[X - 1 - idx] = limb_bytes[j as Field];
-            }
-        }
-        res
-    }
-
-    fn to_bytes_first_128(self: Self) -> [u8; 128] {
-        let mut res = [0 as u8; 128];
-
-        for i in 0..133/BYTES_PER_LIMB {
-            let limb_bytes = (self.limbs[i] as Field).to_le_bytes(BYTES_PER_LIMB as u32);
-            for j in 0..BYTES_PER_LIMB {
-                let idx = i * BYTES_PER_LIMB + j;
-                if idx as u16 < 128 {
-                    res[128 - 1 - idx] = limb_bytes[j as Field];
-                }
-            }
-        }
-        res
-    }
-
-    unconstrained
-    fn unsafe_to_bytes(self: Self) -> [u8; MAX_BYTES] {
-        let mut res = [0 as u8; MAX_BYTES];
-
-        for i in 0..NUM_LIMBS {
-            let limb_bytes = (self.limbs[i] as Field).to_le_bytes(BYTES_PER_LIMB as u32);
-            for j in 0..BYTES_PER_LIMB {
-                let idx = i * BYTES_PER_LIMB + j;
-                res[MAX_BYTES - 1 - idx] = limb_bytes[j as Field];
-            }
-        }
+    
         res
     }
 
     /// Returns the bit array representation of the BigUint56, with LSB at index 0.
     fn to_bits(self: Self) -> [u1; MAX_BITS] {
         let mut res = [0 as u1; MAX_BITS];
-
+    
         for i in 0..NUM_LIMBS {
             let limb_bits = (self.limbs[i] as Field).to_le_bits(BITS_PER_LIMB as u32);
             for j in 0..BITS_PER_LIMB {
@@ -176,7 +99,7 @@ impl BigUint56 {
                 res[idx] = limb_bits[j as Field];
             }
         }
-
+    
         res
     }
 
@@ -213,7 +136,7 @@ impl BigUint56 {
             res.limbs[i] = diff;
             borrow = new_borrow;
         };
-
+        
         (res, borrow)
     }
 
@@ -256,20 +179,20 @@ impl BigUint56 {
     /// Shifts the BigUint56 instance to the left by a specified number of bits `n`.
     /// where `0 <= n < Limb::BITS`,
     /// Returns the shifted result and the carry.
-    // TODO: Should I return early if n == 0?
     fn shl_limb(self: Self, n: u56) -> (Self, u56) {
         assert(n < BITS_PER_LIMB as u56);
 
-        let mut res = BigUint56::zero();
+        let mut res = self;
 
         let rshift = BITS_PER_LIMB as u56 - n;
-        let carry = self.limbs[NUM_LIMBS - 1] >> rshift;
+        let carry = if (n == 0) { 0 } else { self.limbs[NUM_LIMBS - 1] >> rshift };
 
-        res.limbs[0] = self.limbs[0] << n;
-        for i in 1..NUM_LIMBS {
-            res.limbs[i] = (self.limbs[i] << n) | (self.limbs[i - 1] >> rshift);
-        // BUG: Panics without this semi-colon.
-        };
+        if (n > 0) {
+            res.limbs[0] = self.limbs[0] << n;
+            for i in 1..NUM_LIMBS {
+                res.limbs[i] = (self.limbs[i] << n) | (self.limbs[i - 1] >> rshift);
+            }
+        }
 
         (res, carry)
     }
@@ -311,13 +234,17 @@ impl BigUint56 {
     fn shr_limb(self: Self, n: u56) -> Self {
         assert(n < BITS_PER_LIMB as u56);
 
-        let mut res = BigUint56::zero();
-        let lshift = BITS_PER_LIMB as u56 - n;
+        let mut res = self;
 
-        for i in 0..NUM_LIMBS-1 {
-            res.limbs[i] = (self.limbs[i] >> n) | (self.limbs[i + 1] << lshift);
+        if (n > 0) {
+            let lshift = BITS_PER_LIMB as u56 - n;
+
+            for i in 0..NUM_LIMBS-1 {
+                res.limbs[i] = (self.limbs[i] >> n) | (self.limbs[i + 1] << lshift);
+            }
+            res.limbs[NUM_LIMBS - 1] = self.limbs[NUM_LIMBS - 1] >> n;
         }
-        res.limbs[NUM_LIMBS - 1] = self.limbs[NUM_LIMBS - 1] >> n;
+
 
         res
     }
@@ -450,9 +377,8 @@ impl BigUint56 {
             sum2.add(modulus)
         }
     }
-
+    
     // Returns self * other % modulus.
-    unconstrained
     fn mulmod(self: Self, other: Self, modulus: Self) -> Self {
         // We assume that the mul is < 2^MAX_BITS, so we can just mod the low part.
         let (lo, _hi) = self.mul(other);
@@ -479,7 +405,7 @@ impl BigUint56 {
     // Returns self * self % modulus.
     fn squaremod(self: Self, modulus: Self) -> Self {
         let rem = self.mulmod(self, modulus);
-
+        
         rem
     }
 
@@ -499,21 +425,16 @@ impl BigUint56 {
                 res = res.mulmod(pow, modulus);
             }
             pow = pow.squaremod(modulus);
+            println(e_bits[i]);
         }
 
         res
     }
 
-    // Fast powmod for RSA
-    unconstrained
-    fn fastpowmod(self: Self, e: Self, modulus: Self) -> Self {
-        self.mulmod(e, modulus)
-    }
-
-    // Print as bytes
+    // Prints the BigUint56 instance as a byte array.
     fn println(self: Self) {
         let bytes = self.to_bytes();
-        dep::std::println(bytes);
+        println(bytes);
     }
 }
 
@@ -523,7 +444,7 @@ fn test_to_bytes1() {
     let b = BigUint56::one();
 
     let c = a.sub(b);
-    assert(c.to_bytes() == [0-1 as u8; MAX_BYTES]);
+    assert(c.to_bytes() == [0 - 1 as u8; MAX_BYTES]);
 }
 
 #[test]
@@ -546,7 +467,7 @@ fn test_add1() {
 
 #[test]
 fn test_adc1() {
-    let a = BigUint56{ limbs: [0-1 as u56; NUM_LIMBS] };
+    let a = BigUint56 { limbs: [0 - 1 as u56; NUM_LIMBS] };
     let b = BigUint56::one();
     let (sum, carry) = a.adc(b);
 
@@ -703,7 +624,7 @@ fn test_bits2() {
 
 #[test]
 fn test_bits3() {
-    let a = BigUint56::from_bytes([0-1 as u8]);
+    let a = BigUint56::from_bytes([0 - 1 as u8]);
     let b = a.nbits();
 
     assert(b == 8);
