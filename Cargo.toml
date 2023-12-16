@@ -1,5 +1,5 @@
 [package]
-name = "rust-helpers"
+name = "noir_rsa_optimised"
 version = "0.1.0"
 edition = "2021"
 

@@ -208,6 +208,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "noir_rsa_optimised"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "num-bigint",
+ "num-traits",
+ "rand",
+ "rsa",
+ "sha256",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -384,18 +396,6 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "rust-helpers"
-version = "0.1.0"
-dependencies = [
- "hex",
- "num-bigint",
- "num-traits",
- "rand",
- "rsa",
- "sha256",
 ]
 
 [[package]]
