@@ -10,7 +10,7 @@ use rsa::traits::PublicKeyParts;
 fn sign_with_rsa(msg: &str) -> (RsaPublicKey, Signature) {
     let mut rng = rand::thread_rng();
 
-    let bits = 2048;
+    let bits = 4096;
     let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, bits).expect("failed to generate a key");
     let public_key = private_key.to_public_key();
     let signing_key = SigningKey::<Sha256>::new(private_key);
