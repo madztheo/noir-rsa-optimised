@@ -1,4 +1,4 @@
-use dep::biguint::{BigUint56, MAX_BYTES};
+use dep::large_integer::{LargeInteger, MAX_BYTES};
 use dep::std::println;
 
 /**
@@ -11,10 +11,10 @@ use dep::std::println;
 global SHA256_PADDING = [32, 4, 0, 5, 1, 2, 4, 3, 101, 1, 72, 134, 96, 9, 6, 13, 48, 49, 48];
 
 pub fn decrypt_rsa(
-    sig: BigUint56,
-    pubkey: BigUint56,
-    final_e: BigUint56,
-    sig_quotient: BigUint56
+    sig: LargeInteger,  
+    pubkey: LargeInteger,
+    final_e: LargeInteger,
+    sig_quotient: LargeInteger
 ) -> [u8; MAX_BYTES] {
     // To decrypt: (sig*final_e)-(pubkey*quotient)
     let dividend = sig.mul(final_e).0;
@@ -75,10 +75,10 @@ fn compare_signature_sha256<T>(
 
 pub fn verify_rsa_sha256_pkcs1v15(
     msg_hash: [u8; 32],
-    sig: BigUint56,
-    pubkey: BigUint56,
-    final_e: BigUint56,
-    sig_quotient: BigUint56
+    sig: LargeInteger,
+    pubkey: LargeInteger,
+    final_e: LargeInteger,
+    sig_quotient: LargeInteger
 ) -> bool {
     let sig_decrypted_bytes: [u8; MAX_BYTES] = decrypt_rsa(sig, pubkey, final_e, sig_quotient);
     compare_signature_sha256(sig_decrypted_bytes, msg_hash, sig.to_bytes())

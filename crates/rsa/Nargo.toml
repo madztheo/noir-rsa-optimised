@@ -2,8 +2,7 @@
 name = "rsa"
 authors = []
 type = "lib"
-compiler_version = ">=0.19.0"
+compiler_version = ">=0.22.0"
 
 [dependencies]
-biguint = { path = "../rsa-biguint" }
-
+large_integer = { tag = "main", git = "https://github.com/madztheo/noir-large-integer", directory = "crates/large-integer-64" }

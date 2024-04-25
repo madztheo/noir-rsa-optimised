@@ -1,4 +1,4 @@
-use dep::biguint::BigUint56;
+use dep::large_integer::LargeInteger;
 use dep::rsa::verify_rsa_sha256_pkcs1v15;
 
 fn reverse_bytes_array<N>(arr: [u8; N]) -> [u8; N] {
@@ -18,10 +18,10 @@ fn main(
     msg_hash: [u8; 32]
 ) {
     // We assume the bytes are in big endian format so we convert them to little endian
-    let sig_biguint = BigUint56::from_bytes(reverse_bytes_array(sig));
-    let pubkey_biguint = BigUint56::from_bytes(reverse_bytes_array(pubkey));
-    let final_e_biguint = BigUint56::from_bytes(reverse_bytes_array(final_e));
-    let quotient_biguint = BigUint56::from_bytes(reverse_bytes_array(quotient));
+    let sig_biguint = LargeInteger::from_bytes(reverse_bytes_array(sig));
+    let pubkey_biguint = LargeInteger::from_bytes(reverse_bytes_array(pubkey));
+    let final_e_biguint = LargeInteger::from_bytes(reverse_bytes_array(final_e));
+    let quotient_biguint = LargeInteger::from_bytes(reverse_bytes_array(quotient));
 
     verify_rsa_sha256_pkcs1v15(
         msg_hash,
