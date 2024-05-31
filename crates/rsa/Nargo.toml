@@ -5,4 +5,4 @@ type = "lib"
 compiler_version = ">=0.22.0"
 
 [dependencies]
-large_integer = { tag = "main", git = "https://github.com/madztheo/noir-large-integer", directory = "crates/large-integer-64" }
+large_integer = { tag = "0.1.0", git = "https://github.com/madztheo/noir-large-integer", directory = "crates/large-integer-64" }

@@ -1,4 +1,4 @@
-use dep::large_integer::{LargeInteger, MAX_BYTES};
+use dep::large_integer::{LargeInteger, MAX_BYTES_u64};
 use dep::std::println;
 
 /**
@@ -11,33 +11,33 @@ use dep::std::println;
 global SHA256_PADDING = [32, 4, 0, 5, 1, 2, 4, 3, 101, 1, 72, 134, 96, 9, 6, 13, 48, 49, 48];
 
 pub fn decrypt_rsa(
-    sig: LargeInteger,  
+    sig: LargeInteger,
     pubkey: LargeInteger,
     final_e: LargeInteger,
     sig_quotient: LargeInteger
-) -> [u8; MAX_BYTES] {
+) -> [u8; MAX_BYTES_u64] {
     // To decrypt: (sig*final_e)-(pubkey*quotient)
     let dividend = sig.mul(final_e).0;
     let mul_result = pubkey.mul(sig_quotient).0;
     let sig_decrypted = dividend.sub(mul_result);
-    let sig_decrypted_bytes: [u8; MAX_BYTES] = sig_decrypted.to_bytes();
+    let sig_decrypted_bytes: [u8; MAX_BYTES_u64] = sig_decrypted.to_bytes();
 
     sig_decrypted_bytes
 }
 
 fn compare_signature_sha256<T>(
-    padded_sha256_hash: [u8; MAX_BYTES],
+    padded_sha256_hash: [u8; MAX_BYTES_u64],
     msg_hash: [u8; 32],
-    sig: [u8; MAX_BYTES]
+    sig: [u8; MAX_BYTES_u64]
 ) -> bool {
     // Get length of sig (e.g. 1048 = 128 bytes, 2048 = 256 bytes)
     // NOTE: Assume MAX_BYTES < 2^32 bit number. MAX_BYTES of 259 > 2^8 bits so need to cast it to u32
     let mut sig_len = 0 as u32;
     let mut sum = 0 as u32;
-    for i in 0..MAX_BYTES {
-        sum += sig[MAX_BYTES - 1 - i] as u32;
+    for i in 0..MAX_BYTES_u64 {
+        sum += sig[MAX_BYTES_u64 - 1 - i] as u32;
         if sum == 0 {
-            sig_len = MAX_BYTES as u32 - 1 - i as u32;
+            sig_len = MAX_BYTES_u64 as u32 - 1 - i as u32;
         }
     }
 
@@ -54,7 +54,7 @@ fn compare_signature_sha256<T>(
 
     // Sub 32 bytes for hash, 19 bytes for prefix, 1 byte for 0, 1 byte for 1, 1 byte for 0
     let ps_len = sig_len - 54;
-    for i in 52..MAX_BYTES {
+    for i in 52..MAX_BYTES_u64 {
         if i as u32 < 52 + ps_len as u32 {
             // PS padding which depends on RSA modulus / sig length. 1024 bits = 128 bytes = 128 - 54 = 74 bytes of 0xFF padding
             assert(padded_sha256_hash[i] == 255);
@@ -80,6 +80,6 @@ pub fn verify_rsa_sha256_pkcs1v15(
     final_e: LargeInteger,
     sig_quotient: LargeInteger
 ) -> bool {
-    let sig_decrypted_bytes: [u8; MAX_BYTES] = decrypt_rsa(sig, pubkey, final_e, sig_quotient);
+    let sig_decrypted_bytes: [u8; MAX_BYTES_u64] = decrypt_rsa(sig, pubkey, final_e, sig_quotient);
     compare_signature_sha256(sig_decrypted_bytes, msg_hash, sig.to_bytes())
 }
