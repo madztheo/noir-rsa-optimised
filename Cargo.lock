@@ -209,7 +209,7 @@ dependencies = [
 
 [[package]]
 name = "noir_rsa_optimised"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hex",
  "num-bigint",
